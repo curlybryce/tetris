@@ -1,7 +1,7 @@
+pub mod input;
 mod tetris;
-mod input;
 
-use input::Input;
+use crate::input::Input;
 
 pub struct Game {
     tickrate: u8, // Between 

@@ -1,10 +1,8 @@
-mod lib;
-mod display;
-mod input;
+use tetris::Game;
+use tetris::input::Input;
 
 fn main() {
-    println!("Hello World!");
-    let tetris = lib::Tetris::new();
-
-    display::display(tetris.return_grid());
+    let input = Input::new();
+    let game = Game::new();
+    game.game_loop(&input)
 }
