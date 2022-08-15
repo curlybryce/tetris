@@ -7,29 +7,31 @@ use std::io::stdin;
 use crate::input::Input;
 
 pub struct Game {
-    tickrate: u8, // Between 
+    tickrate: u8, // How many times things are checked a second
     maxfps: u8, // Between 1 and 240
+    gamespeed: u8, // How quickly r#move(down) is called in ms
 }
 impl Game {
     pub fn new() -> Game {
         Game{
             tickrate: 20,
             maxfps: 30,
+            gamespeed: 250,
         }
     }
 
     // The actual game loop
     pub fn game_loop(&self, input: &Input) {
         let mut tetris = tetris::Tetris::new();
-        let mut piece = piece::Piece::random();
+        let mut piece = piece::Piece::random(piece::Pos(0,0));
         loop {
             piece.r#move(piece::Dir::Down, &tetris);
 
             // Check if piece is dead
             if piece.is_alive() == false {
                 piece.apply_to_grid(&mut tetris);
-                // piece = piece::Piece::random();
-                piece = piece::Piece::new(piece::Pieces::Cube);
+                piece = piece::Piece::random(piece::Pos(0,0));
+                // piece = piece::Piece::new(piece::Pieces::Cube, piece::Pos(0,0));
             }
             
             let grid = tetris.return_grid();
@@ -43,7 +45,7 @@ impl Game {
                 "a" => piece.r#move(piece::Dir::Left, &tetris),
                 "d" => piece.r#move(piece::Dir::Right, &tetris),
                 "e" => piece.rotate(piece::Rotate::Right),
-                "q" => piece.rotate(piece::Rotate::Right),
+                "q" => piece.rotate(piece::Rotate::Left),
                 " " => break,
                 _ => (),
             }

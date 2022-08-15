@@ -1,0 +1,10 @@
+Redo Piece data structure for easier rotation
+    a center, the 9 around that and 27 or whatever around that
+    so that they can just be shifted around
+
+    implement a get function to make things easy on the display function
+
+SFML input
+SFML graphics
+Select between debug(cli) and gui display
+Next piece in gui
