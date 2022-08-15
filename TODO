@@ -8,3 +8,8 @@ SFML input
 SFML graphics
 Select between debug(cli) and gui display
 Next piece in gui
+Add sounds (mostly for losing, winning and clearing a row)
+Pause on lose focus
+Also add a pause
+Have a menu
+Add to score on line clear

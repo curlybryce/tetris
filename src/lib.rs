@@ -25,6 +25,7 @@ impl Game {
         let mut tetris = tetris::Tetris::new();
         let mut piece = piece::Piece::random(piece::Pos(0,0));
         loop {
+            tetris.check_lines();
             piece.r#move(piece::Dir::Down, &tetris);
 
             // Check if piece is dead
