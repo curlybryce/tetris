@@ -282,7 +282,7 @@ mod tests {
         let d = Dir::Down;
         p.apply_dir(&d);
 
-        if p.get_pos() != Pos(1,5) {
+        if p.get_pos() != Pos(2,1) {
             panic!("{:?} did not move down properly", p.get_pos())
         }
     }
@@ -292,9 +292,7 @@ mod tests {
         let mut p = Piece::new(Pieces::Cube, Pos(0,0));
         let d = Dir::Down;
 
-        let tetris = Tetris::new();
-
-        p.r#move(d, &tetris);
+        let mut tetris = Tetris::new();
 
         if p.is_alive() != false {
             panic!("Piece did not die, is_alive == {}", p.is_alive())
