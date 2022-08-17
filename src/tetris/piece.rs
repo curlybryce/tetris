@@ -36,10 +36,12 @@ impl Sub for Pos {
     }
 }
 
+const NONE: Pos = Pos(0,0);
 const DOWN: Pos = Pos(1,0);
 const LEFT: Pos = Pos(0,-1);
 const RIGHT: Pos = Pos(0,1);
 
+#[derive(PartialEq)]
 pub enum Rotate {
     Left,
     Right
@@ -47,6 +49,7 @@ pub enum Rotate {
 
 #[derive(PartialEq)]
 pub enum Dir {
+    None,
     Down,
     Left,
     Right,
@@ -54,56 +57,13 @@ pub enum Dir {
 impl Dir {
     fn get(&self) -> Pos {
         match self {
+            Dir::None => NONE,
             Dir::Down => DOWN,
             Dir::Left => LEFT,
             Dir::Right => RIGHT,
         }
     }
 }
-
-const NORMALL: [[i8; 4]; 4] = [
-    [0,0,0,0],
-    [1,0,0,0],
-    [1,0,0,0],
-    [1,1,0,0],
-];
-const REVERSEL: [[i8; 4]; 4] = [
-    [0,0,0,0],
-    [0,0,0,1],
-    [0,0,0,1],
-    [0,0,1,1],
-];
-const CUBE: [[i8; 4]; 4] = [
-    [0,0,0,0],
-    [0,1,1,0],
-    [0,1,1,0],
-    [0,0,0,0],
-];
-const TEE: [[i8; 4]; 4] = [
-    [0,0,0,0],
-    [0,0,0,0],
-    [0,1,0,0],
-    [1,1,1,0],
-];
-const DIAG: [[i8; 4]; 4] = [
-    [0,0,0,0],
-    [0,0,0,0],
-    [1,1,0,0],
-    [0,1,1,0],
-];
-const REVERSEDIAG: [[i8; 4]; 4] = [
-    [0,0,0,0],
-    [0,0,0,0],
-    [0,0,1,1],
-    [0,1,1,0],
-];
-const STRAIGHT: [[i8; 4]; 4] = [
-    [1,0,0,0],
-    [1,0,0,0],
-    [1,0,0,0],
-    [1,0,0,0],
-];
-
 
 pub enum Pieces {
     NormalL,
@@ -130,46 +90,70 @@ impl Pieces {
         }
     }
 
-    fn get(&self) -> [[i8; 4]; 4] {
-        use Pieces::*;
-        match &self {
-            NormalL => NORMALL,
-            ReverseL => REVERSEL,
-            Cube => CUBE,
-            Tee => TEE,
-            Diag => DIAG,
-            ReverseDiag => REVERSEDIAG,
-            Straight => STRAIGHT,
-        }
-    }
+    fn get(&self) -> Vec<Vec<i8>> {
+        let l: Vec<Vec<i8>> = vec![
+            // Outer most ring: top, right, bottom, left
+            vec![0,0,1,0,0, 0,0,0, 0,0,0,0,0, 0,0,0],
+            // Inner rign: top, right, bottom, left
+            vec![0,1,0, 0, 0,0,0, 1],
+            // Center ring.  Is used as the center of rotation
+            vec![1],
+        ];
+        let r_l: Vec<Vec<i8>> = vec![
+            vec![0,0,1,0,0, 0,0,0, 0,0,0,0,0, 0,0,0],
+            vec![0,1,0, 1, 0,0,0, 0],
+            vec![1],
+        ];
+        let cube: Vec<Vec<i8>> = vec![
+            vec![0,0,0,0,0, 0,0,0, 0,0,0,0,0, 0,0,0],
+            vec![0,1,1, 1, 0,0,0, 0],
+            vec![1],
+        ];
+        let tee: Vec<Vec<i8>> = vec![
+            vec![0,0,0,0,0, 0,0,0, 0,0,0,0,0, 0,0,0],
+            vec![0,1,0, 1, 0,0,0, 1],
+            vec![1],
+        ];
+        let diag: Vec<Vec<i8>> = vec![
+            vec![0,0,0,0,0, 0,0,0, 0,0,0,0,0, 0,0,0],
+            vec![1,1,0, 1, 0,0,0, 0],
+            vec![1],
+        ];
+        let r_diag: Vec<Vec<i8>> = vec![
+            vec![0,0,0,0,0, 0,0,0, 0,0,0,0,0, 0,0,0],
+            vec![0,1,1, 0, 0,0,0, 1],
+            vec![1],
+        ];
+        let straight: Vec<Vec<i8>> = vec![
+            vec![0,0,1,0,0, 0,0,0, 0,0,0,0,0, 0,0,0],
+            vec![0,1,0, 0, 0,1,0, 0],
+            vec![1],
+        ];
 
-    fn get_origin(&self) -> Pos {
         use Pieces::*;
+
         match &self {
-            NormalL => Pos(3,0),
-            ReverseL => Pos(3,3),
-            Cube => Pos(1,1),
-            Tee => Pos(3,1),
-            Diag => Pos(2,1),
-            ReverseDiag => Pos(2,2),
-            Straight => Pos(3,0),
+            NormalL => l,
+            ReverseL => r_l,
+            Cube => cube,
+            Tee => tee,
+            Diag => diag,
+            ReverseDiag => r_diag,
+            Straight => straight,
         }
     }
 }
 
 pub struct Piece {
-    area: [[i8; 4]; 4], // A static 3x3 area
+    area: Vec<Vec<i8>>, // A static 3x3 area
     position: Pos,
-    origin: Pos,
     alive: bool,
 }
 impl Piece {
     pub fn new(p: Pieces, pos: Pos) -> Piece {
-        let origin = p.get_origin();
         Piece{
             area: p.get(),
-            position: pos + origin,
-            origin: origin,
+            position: pos,
             alive: true,
         }
     }
@@ -178,14 +162,59 @@ impl Piece {
     // out of the enum Pieces
     pub fn random(pos: Pos) -> Piece {
         let piece = Pieces::random();
-        let origin = piece.get_origin();
-        dbg!(pos - origin);
         Piece{
             area: piece.get(),
-            position: pos - origin,
-            origin: origin,
+            position: pos,
             alive: true,
         }
+    }
+
+    // Get area as a 2d array
+    fn get_area(&self) -> [[i8; 5]; 5] {
+        let mut array = [[0; 5]; 5];
+        
+        for sections in &self.area {
+            if sections.len() == 16 {
+                // Top
+                array[0][0] = *sections.get(0).expect("Invalid");
+                array[0][1] = *sections.get(1).expect("Invalid");
+                array[0][2] = *sections.get(2).expect("Invalid");
+                array[0][3] = *sections.get(3).expect("Invalid");
+                array[0][4] = *sections.get(4).expect("Invalid");
+                // Right
+                array[1][4] = *sections.get(5).expect("Invalid");
+                array[2][4] = *sections.get(6).expect("Invalid");
+                array[3][4] = *sections.get(7).expect("Invalid");
+                // Bottom
+                array[4][4] = *sections.get(8).expect("Invalid");
+                array[4][3] = *sections.get(9).expect("Invalid");
+                array[4][2] = *sections.get(10).expect("Invalid");
+                array[4][1] = *sections.get(11).expect("Invalid");
+                array[4][0] = *sections.get(12).expect("Invalid");
+                // Left
+                array[3][0] = *sections.get(13).expect("Invalid");
+                array[2][0] = *sections.get(14).expect("Invalid");
+                array[1][0] = *sections.get(15).expect("Invalid");            }
+            if sections.len() == 8 {
+                // Top
+                array[1][1] = *sections.get(0).expect("Invalid");
+                array[1][2] = *sections.get(1).expect("Invalid");
+                array[1][3] = *sections.get(2).expect("Invalid");
+                // Right
+                array[2][3] = *sections.get(3).expect("Invalid");
+                // Bottom
+                array[3][3] = *sections.get(4).expect("Invalid");
+                array[3][2] = *sections.get(5).expect("Invalid");
+                array[3][1] = *sections.get(6).expect("Invalid");
+                // Left
+                array[2][1] = *sections.get(7).expect("Invalid");
+            }
+            if sections.len() == 1 {
+                array[2][2] = *sections.get(0).expect("Invalid");
+            }
+        }
+
+        return array
     }
 
     // Using a grid and a direction;
@@ -232,7 +261,7 @@ impl Piece {
             for posx in posy {
                 x += 1;
                 if posx == 1 {
-                    piece_pos_vec.push(self.get_pos() + Pos(y, x) + self.origin)
+                    piece_pos_vec.push(self.get_pos() + Pos(y, x))
                 }
             }
             y += 1;
@@ -241,16 +270,58 @@ impl Piece {
         return piece_pos_vec
     }
 
-    pub fn rotate(&mut self, r: Rotate) {
-        // Must call hit detect before applying
+    pub fn rotate(&mut self, r: Rotate, tetris: &Tetris) {
+        let mut area = self.area.clone();
+
+        for section in &self.area {
+            let len = section.len();
+            let mut range: Vec<usize> = (0..len).collect();
+            if r == Rotate::Left {
+                let mut new = vec![];
+                for bit in range {
+                    new.insert(0, bit);
+                }
+                range = new;
+            }
+
+            for c in range {
+                let mut loop_num = 0;
+                let mut loop_c = 4;
+
+                // Set to the inner loop
+                if len == 8 {
+                    loop_num = 1;
+                    loop_c = 2;
+                } else if len == 1 {
+                    continue
+                }
+
+                // Right
+                if c < loop_c && r == Rotate::Right {
+                    let x = area[loop_num].pop().expect("Out of Range");
+                    area[loop_num].insert(0, x);
+
+                // Left
+                } else if c < loop_c && r == Rotate::Left {
+                    let x = *area[loop_num].get(0).expect("Out of Range");
+                    area[loop_num].remove(0);
+                    area[loop_num].push(x);
+                }
+            }
+        }
+
+        let old_area = self.area.clone();
+        self.area = area;
+
+        match self.hit_detect(&Dir::None, tetris) {
+            Ok(()) => (),
+            Err(()) => self.area = old_area,
+        }
+
     }
 
     pub fn get_pos(&self) -> Pos {
         self.position
-    }
-
-    pub fn get_area(&self) -> [[i8; 4]; 4] {
-        self.area
     }
 
     pub fn is_alive(&self) -> bool {
@@ -282,17 +353,19 @@ mod tests {
         let d = Dir::Down;
         p.apply_dir(&d);
 
-        if p.get_pos() != Pos(2,1) {
+        if p.get_pos() != Pos(1,0) {
             panic!("{:?} did not move down properly", p.get_pos())
         }
     }
 
     #[test]
     fn hit_test() {
-        let mut p = Piece::new(Pieces::Cube, Pos(0,0));
+        let mut p = Piece::new(Pieces::Cube, Pos(30,0));
         let d = Dir::Down;
 
-        let mut tetris = Tetris::new();
+        let tetris = Tetris::new();
+
+        p.r#move(d, &tetris);
 
         if p.is_alive() != false {
             panic!("Piece did not die, is_alive == {}", p.is_alive())

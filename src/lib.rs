@@ -45,8 +45,8 @@ impl Game {
             match input {
                 "a" => piece.r#move(piece::Dir::Left, &tetris),
                 "d" => piece.r#move(piece::Dir::Right, &tetris),
-                "e" => piece.rotate(piece::Rotate::Right),
-                "q" => piece.rotate(piece::Rotate::Left),
+                "e" => piece.rotate(piece::Rotate::Right, &tetris),
+                "q" => piece.rotate(piece::Rotate::Left, &tetris),
                 " " => break,
                 _ => (),
             }

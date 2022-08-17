@@ -34,14 +34,12 @@ impl Tetris {
             for x in self.grid.get(row as usize).expect("Out of bounds") {
                 if *x == 1 {
                     c += 1;
-                } else {
-                    row -= 1;
-                    continue
                 }
             }
 
             // If the line is full remove it and
             // move everything down
+
             if c == 10 {
                 self.grid.remove(row as usize);
                 self.grid.insert(0, vec![0; 10]);
