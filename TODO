@@ -4,12 +4,14 @@ Also add a pause
 Have a menu
 Add to score on line clear
 
-redo input system.  No longer feels like junk
+redo input system.  Feels good
 Implement win condition and lose condition
 Colored blocks
 Grey blocks when dead
 Gets faster the more lines you clear
 Multiline bonus
+If the piece placed has bits above the top, end game
+Fix aspect ratio to 1:1
 
 Import pieces from files to make it data driven
 Refactor getting 2d array from piece area

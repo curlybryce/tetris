@@ -67,8 +67,10 @@ impl Game {
     pub fn game_loop(&mut self) {
 
         // Textures
-        let background = Texture::from_file("assets/background.png").expect("Cannot load texture");
-        let bit = Texture::from_file("assets/bit.png").expect("Cannot load texture");
+        let mut background = Texture::from_file("assets/background.png").expect("Cannot load texture");
+        background.set_smooth(false);
+        let mut bit = Texture::from_file("assets/bit.png").expect("Cannot load texture");
+        bit.set_smooth(false);
 
         // Objects
         let mut background = RectangleShape::with_texture(&background);
@@ -83,6 +85,7 @@ impl Game {
         // Timing
         let mut tick = Instant::now();
         let mut fpscap = Instant::now();
+        let mut key_count = 0;
 
         // Game setup
         let mut tetris = tetris::Tetris::new();
@@ -126,15 +129,33 @@ impl Game {
                 // Reset the clock
                 fpscap = Instant::now();
                 
+                
                 // Process keys
+                // Limited keys
+                if key_count == 0 {
+                    match key {
+                        Some(Key::A) => {piece.r#move(tetris::piece::Dir::Left, &tetris)},
+                        Some(Key::D) => {piece.r#move(tetris::piece::Dir::Right, &tetris)},
+                        _ => ()
+                    }
+                }
+                //Process keys
+                // Unlimited keys
                 match key {
-                    Some(Key::A) => {piece.r#move(tetris::piece::Dir::Left, &tetris); key = None},
                     Some(Key::S) => piece.r#move(tetris::piece::Dir::Down, &tetris),
-                    Some(Key::D) => {piece.r#move(tetris::piece::Dir::Right, &tetris); key = None},
                     Some(Key::Q) => {piece.rotate(tetris::piece::Rotate::Left, &tetris); key = None},
                     Some(Key::E) => {piece.rotate(tetris::piece::Rotate::Right, &tetris); key = None},
                     Some(Key::Escape) => break,
                     _ => ()
+                }
+                // Make the limit feel good
+                if key != None {
+                    key_count += 1;
+                } else {
+                    key_count = 0;
+                }
+                if key_count > 2 {
+                    key_count = 0;
                 }
 
                 // Draw the background
