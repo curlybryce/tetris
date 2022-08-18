@@ -31,6 +31,7 @@ impl Game {
             &context_settings);
 
         window.set_framerate_limit(maxfps);
+        window.set_key_repeat_enabled(false);
         window.clear(Color::rgb(250, 250, 250));
 
         // View
@@ -41,7 +42,7 @@ impl Game {
         window.set_view(&view);
 
         Game{
-            tickrate: Duration::from_secs(1),
+            tickrate: Duration::from_millis(1000),
             maxfps: 30,
             window_geometry: geometry,
             window: window,
@@ -54,14 +55,12 @@ impl Game {
     }
 
     fn pause(&mut self) {
-        println!("paused");
         loop {
             match self.window.wait_event() {
                 Some(Event::GainedFocus) => break,
                  _ => ()
             }
         }
-        println!("resumed");
     }
 
     // The actual game loop
@@ -88,30 +87,18 @@ impl Game {
         // Game setup
         let mut tetris = tetris::Tetris::new();
         let mut piece = piece::Piece::random(piece::Pos(-2,3));
-        loop {
+        let mut key = None;
+        'main: loop {
             // Process events
-            let mut key: Option<Key> = None;
-            match self.window.poll_event() {
-                Some(n) => match n {
-                    Event::Closed => break,
+            for x in self.window.poll_event() {
+                match x {
+                    Event::Closed => break 'main,
                     Event::Resized {width: w, height: h} => self.set_geometry((w, h)),
                     Event::LostFocus => self.pause(),
                     Event::KeyPressed {code: c, ctrl: _, alt: _, shift: _, system: _} => key = Some(c),
                     Event::KeyReleased {code: _, ctrl: _, alt: _, shift: _, system: _} => key = None,
                     _ => (),
-                },
-                None => (),
-            }
-
-            // Process keys
-            use tetris::piece::{Dir, Rotate};
-            match key {
-                Some(Key::A) => piece.r#move(Dir::Left, &tetris),
-                Some(Key::S) => piece.r#move(Dir::Down, &tetris),
-                Some(Key::D) => piece.r#move(Dir::Right, &tetris),
-                Some(Key::Q) => piece.rotate(Rotate::Left, &tetris),
-                Some(Key::E) => piece.rotate(Rotate::Right, &tetris),
-                _ => ()
+                };
             }
 
             // Check if piece is dead
@@ -120,22 +107,35 @@ impl Game {
                 piece = piece::Piece::random(piece::Pos(-2,3));
                 // piece = piece::Piece::new(piece::Pieces::Cube, piece::Pos(0,0));
             }
-
+            
             // Check if there are full lines
             tetris.check_lines();
-
+            
             // Execute on tick
             if tick.elapsed() >= self.tickrate {
                 // Reset the clock
                 tick = Instant::now();
-
+                
                 // Timed logic
                 piece.r#move(piece::Dir::Down, &tetris)
             }
-
-            if fpscap.elapsed() >= Duration::from_millis(1 / self.maxfps) {
+            
+            
+            
+            if fpscap.elapsed() >= Duration::from_millis(1000 / self.maxfps) {
                 // Reset the clock
                 fpscap = Instant::now();
+                
+                // Process keys
+                match key {
+                    Some(Key::A) => {piece.r#move(tetris::piece::Dir::Left, &tetris); key = None},
+                    Some(Key::S) => piece.r#move(tetris::piece::Dir::Down, &tetris),
+                    Some(Key::D) => {piece.r#move(tetris::piece::Dir::Right, &tetris); key = None},
+                    Some(Key::Q) => {piece.rotate(tetris::piece::Rotate::Left, &tetris); key = None},
+                    Some(Key::E) => {piece.rotate(tetris::piece::Rotate::Right, &tetris); key = None},
+                    Some(Key::Escape) => break,
+                    _ => ()
+                }
 
                 // Draw the background
                 self.window.draw(&background);

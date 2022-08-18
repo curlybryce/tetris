@@ -18,7 +18,9 @@ impl Tetris {
 
     // Set the grid at a Pos
     pub fn set_grid(&mut self, pos: piece::Pos, value: i8) {
-        if self.get_grid_pos(pos) != value {
+        if pos.0 < 0 || pos.1 < 0 {
+            // Lose game
+        } else if self.get_grid_pos(pos) != value {
             self.grid[pos.0 as usize][pos.1 as usize] = value
         }
     }

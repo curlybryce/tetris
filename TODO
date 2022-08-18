@@ -4,8 +4,12 @@ Also add a pause
 Have a menu
 Add to score on line clear
 
-redo input system.  It feels like junk
-Implement win condition
+redo input system.  No longer feels like junk
+Implement win condition and lose condition
+Colored blocks
+Grey blocks when dead
+Gets faster the more lines you clear
+Multiline bonus
 
 Import pieces from files to make it data driven
 Refactor getting 2d array from piece area
