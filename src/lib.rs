@@ -3,6 +3,7 @@ mod tetris;
 use crate::tetris::piece;
 
 use std::time::{Instant, Duration};
+use rand::Rng;
 
 // SFML
 use sfml::window::{Style, Event, ContextSettings, Key};
@@ -93,16 +94,28 @@ impl Game {
     pub fn game_loop(&mut self) {
 
         // Textures
+        // Background
         let mut background = Texture::from_file("assets/background.png").expect("Cannot load texture");
         background.set_smooth(false);
-        let mut bit = Texture::from_file("assets/bit.png").expect("Cannot load texture");
-        bit.set_smooth(false);
+
+        // Bits
+        let mut grey = Texture::from_file("assets/dead.png").expect("Cannot load texture");
+        grey.set_smooth(false);
+        let mut red = Texture::from_file("assets/red.png").expect("Cannot load texture");
+        red.set_smooth(false);
+        let mut green = Texture::from_file("assets/green.png").expect("Cannot load texture");
+        green.set_smooth(false);
+        let mut blue = Texture::from_file("assets/blue.png").expect("Cannot load texture");
+        blue.set_smooth(false);
+
+        let bits_list = [&red, &green, &blue];
+
 
         // Objects
         let mut background = RectangleShape::with_texture(&background);
         background.set_size(Vector2f::new(480.0, 480.0));
 
-        let mut bit = RectangleShape::with_texture(&bit);
+        let mut bit = RectangleShape::with_texture(&blue);
         bit.set_size(Vector2f::new(24.0, 24.0));
 
         // Initialize the background
@@ -140,6 +153,12 @@ impl Game {
                 piece = next_piece;
                 piece.set_pos(tetris::piece::Pos(-2, 3));
                 next_piece = piece::Piece::random(piece::Pos(3,13));
+
+                // Set the color
+                let x = match rand::thread_rng().gen_range(0..bits_list.len()) {
+                    n => bits_list[n]
+                };
+                bit.set_texture(&x, false);
             }
             
             // Check if there are full lines
@@ -200,7 +219,11 @@ impl Game {
                 // Start drawing everything
                 let grid = tetris.return_grid();
     
+
                 // Draw all the bits
+                // Set the color
+                let old_texture = bit.texture().unwrap();
+                bit.set_texture(&grey, false);
                 for y in (0..grid.len()).rev() {
                     for x in 0..grid.len() {
                         if *grid.get(y).unwrap_or(&vec![0]).get(x).unwrap_or(&0) == 1 {
@@ -209,6 +232,8 @@ impl Game {
                         }
                     }
                 }
+                bit.set_texture(&old_texture, false);
+
                 for piece_bit in piece.get_bits_pos() {
                     if !(piece_bit.0 < 0 || piece_bit.1 < 0) {
                         bit.set_position(((piece_bit.1 as f32) * 24.0, (piece_bit.0 as f32) * 24.0));

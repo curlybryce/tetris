@@ -2,8 +2,9 @@ Add sounds (mostly for losing, winning and clearing a row)
 Have a menu
 
 redo input system.  Feels good
-Colored blocks
-Grey blocks when dead
+    Separate input into it's own module
+
+Have each piece be its own color even when dead
 Fix aspect ratio to 1:1
 
 Import pieces from files to make it data driven
