@@ -46,7 +46,7 @@ impl Game {
 
         Game{
             tickrate: Duration::from_millis(1000),
-            low_tickrate: Duration::from_millis(200),
+            low_tickrate: Duration::from_millis(150),
             maxfps: 30,
             window_geometry: geometry,
             window: window,
@@ -165,7 +165,7 @@ impl Game {
             match tetris.check_lines() {
                 0 => (),
                 n => {self.set_score(self.get_score() + (n * n) as u64);
-                    self.set_tickrate(self.get_tickrate() - Duration::from_millis(n as u64));},
+                    self.set_tickrate(self.get_tickrate() - Duration::from_millis(n as u64 * 25));},
             }
             println!("{}, {:?}", self.get_score(), self.get_tickrate());
             
