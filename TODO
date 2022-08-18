@@ -1,9 +1,12 @@
-SFML input
-SFML graphics
-Select between debug(cli) and gui display
 Next piece in gui
 Add sounds (mostly for losing, winning and clearing a row)
-Pause on lose focus
 Also add a pause
 Have a menu
 Add to score on line clear
+
+redo input system.  It feels like junk
+Implement win condition
+
+Import pieces from files to make it data driven
+Refactor getting 2d array from piece area
+    Make it a pointer to the values in the area
