@@ -11,9 +11,11 @@ use sfml::system::{Vector2f, Vector2u};
 
 pub struct Game {
     tickrate: Duration, // How many times things are checked a second
+    low_tickrate: Duration, // What's the lowest speed the game can run at
     maxfps: u64,
     window_geometry: (u32, u32),
     window: RenderWindow,
+    score: u64,
 }
 impl Game {
     pub fn new() -> Game {
@@ -43,9 +45,33 @@ impl Game {
 
         Game{
             tickrate: Duration::from_millis(1000),
+            low_tickrate: Duration::from_millis(200),
             maxfps: 30,
             window_geometry: geometry,
             window: window,
+            score: 0,
+        }
+    }
+
+    pub fn get_score(&self) -> u64 {
+        self.score
+    }
+    pub fn set_score(&mut self, value: u64) {
+        if value > u64::MAX {
+            self.score = u64::MAX
+        } else {
+            self.score = value;
+        }
+    }
+
+    pub fn get_tickrate(&self) -> Duration {
+        self.tickrate
+    }
+    pub fn set_tickrate(&mut self, duration: Duration) {
+        if duration < self.low_tickrate {
+            self.tickrate = self.low_tickrate
+        } else {
+            self.tickrate = duration
         }
     }
 
@@ -90,6 +116,7 @@ impl Game {
         // Game setup
         let mut tetris = tetris::Tetris::new();
         let mut piece = piece::Piece::random(piece::Pos(-2,3));
+        let mut next_piece = piece::Piece::random(piece::Pos(3,13));
         let mut key = None;
         'main: loop {
             // Process events
@@ -106,16 +133,25 @@ impl Game {
 
             // Check if piece is dead
             if piece.is_alive() == false {
-                piece.apply_to_grid(&mut tetris);
-                piece = piece::Piece::random(piece::Pos(-2,3));
-                // piece = piece::Piece::new(piece::Pieces::Cube, piece::Pos(0,0));
+                if piece.apply_to_grid(&mut tetris) == false {
+                    // Game has been lost
+                    break
+                }
+                piece = next_piece;
+                piece.set_pos(tetris::piece::Pos(-2, 3));
+                next_piece = piece::Piece::random(piece::Pos(3,13));
             }
             
             // Check if there are full lines
-            tetris.check_lines();
+            match tetris.check_lines() {
+                0 => (),
+                n => {self.set_score(self.get_score() + (n * n) as u64);
+                    self.set_tickrate(self.get_tickrate() - Duration::from_millis(n as u64));},
+            }
+            println!("{}, {:?}", self.get_score(), self.get_tickrate());
             
             // Execute on tick
-            if tick.elapsed() >= self.tickrate {
+            if tick.elapsed() >= self.get_tickrate() {
                 // Reset the clock
                 tick = Instant::now();
                 
@@ -174,6 +210,12 @@ impl Game {
                     }
                 }
                 for piece_bit in piece.get_bits_pos() {
+                    if !(piece_bit.0 < 0 || piece_bit.1 < 0) {
+                        bit.set_position(((piece_bit.1 as f32) * 24.0, (piece_bit.0 as f32) * 24.0));
+                        self.window.draw(&bit); 
+                    }
+                }
+                for piece_bit in next_piece.get_bits_pos() {
                     if !(piece_bit.0 < 0 || piece_bit.1 < 0) {
                         bit.set_position(((piece_bit.1 as f32) * 24.0, (piece_bit.0 as f32) * 24.0));
                         self.window.draw(&bit); 

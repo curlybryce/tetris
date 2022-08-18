@@ -93,15 +93,15 @@ impl Pieces {
     fn get(&self) -> Vec<Vec<i8>> {
         let l: Vec<Vec<i8>> = vec![
             // Outer most ring: top, right, bottom, left
-            vec![0,0,1,0,0, 0,0,0, 0,0,0,0,0, 0,0,0],
+            vec![0,0,0,0,0, 0,0,0, 0,0,0,0,0, 0,0,0],
             // Inner rign: top, right, bottom, left
-            vec![0,1,0, 0, 0,0,0, 1],
+            vec![0,1,0, 0, 0,1,1, 0],
             // Center ring.  Is used as the center of rotation
             vec![1],
         ];
         let r_l: Vec<Vec<i8>> = vec![
-            vec![0,0,1,0,0, 0,0,0, 0,0,0,0,0, 0,0,0],
-            vec![0,1,0, 1, 0,0,0, 0],
+            vec![0,0,0,0,0, 0,0,0, 0,0,0,0,0, 0,0,0],
+            vec![0,1,0, 0, 1,1,0, 0],
             vec![1],
         ];
         let cube: Vec<Vec<i8>> = vec![
@@ -150,14 +150,6 @@ pub struct Piece {
     alive: bool,
 }
 impl Piece {
-    pub fn new(p: Pieces, pos: Pos) -> Piece {
-        Piece{
-            area: p.get(),
-            position: pos,
-            alive: true,
-        }
-    }
-    
     // Return a random piece
     // out of the enum Pieces
     pub fn random(pos: Pos) -> Piece {
@@ -170,51 +162,31 @@ impl Piece {
     }
 
     // Get area as a 2d array
-    fn get_area(&self) -> [[i8; 5]; 5] {
-        let mut array = [[0; 5]; 5];
+    fn get_area(&self) -> [[&i8; 5]; 5] {
+        let mut array = [[&0; 5]; 5];
         
         for sections in &self.area {
-            if sections.len() == 16 {
-                // Top
-                array[0][0] = *sections.get(0).expect("Invalid");
-                array[0][1] = *sections.get(1).expect("Invalid");
-                array[0][2] = *sections.get(2).expect("Invalid");
-                array[0][3] = *sections.get(3).expect("Invalid");
-                array[0][4] = *sections.get(4).expect("Invalid");
-                // Right
-                array[1][4] = *sections.get(5).expect("Invalid");
-                array[2][4] = *sections.get(6).expect("Invalid");
-                array[3][4] = *sections.get(7).expect("Invalid");
-                // Bottom
-                array[4][4] = *sections.get(8).expect("Invalid");
-                array[4][3] = *sections.get(9).expect("Invalid");
-                array[4][2] = *sections.get(10).expect("Invalid");
-                array[4][1] = *sections.get(11).expect("Invalid");
-                array[4][0] = *sections.get(12).expect("Invalid");
-                // Left
-                array[3][0] = *sections.get(13).expect("Invalid");
-                array[2][0] = *sections.get(14).expect("Invalid");
-                array[1][0] = *sections.get(15).expect("Invalid");            }
-            if sections.len() == 8 {
-                // Top
-                array[1][1] = *sections.get(0).expect("Invalid");
-                array[1][2] = *sections.get(1).expect("Invalid");
-                array[1][3] = *sections.get(2).expect("Invalid");
-                // Right
-                array[2][3] = *sections.get(3).expect("Invalid");
-                // Bottom
-                array[3][3] = *sections.get(4).expect("Invalid");
-                array[3][2] = *sections.get(5).expect("Invalid");
-                array[3][1] = *sections.get(6).expect("Invalid");
-                // Left
-                array[2][1] = *sections.get(7).expect("Invalid");
+            let len = sections.len();
+            let mut y = [0; 16];
+            let mut x = [0; 16];
+
+            if len == 16 {
+                y = [0,0,0,0,0,1,2,3,4,4,4,4,4,3,2,1];
+                x = [0,1,2,3,4,4,4,4,4,3,2,1,0,0,0,0];
+            } else if len == 8 {
+                y = [1,1,1,2,3,3,3,2,0,0,0,0,0,0,0,0];
+                x = [1,2,3,3,3,2,1,1,0,0,0,0,0,0,0,0];
+            } else if len == 1 {
+                y = [2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+                x = [2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];                
             }
-            if sections.len() == 1 {
-                array[2][2] = *sections.get(0).expect("Invalid");
+
+            for c in 0..len {
+                array[y[c]][x[c]] = sections.get(c).expect("Invalid");
             }
         }
-
         return array
+
     }
 
     // Using a grid and a direction;
@@ -242,10 +214,17 @@ impl Piece {
         Ok(())
     }
 
-    pub fn apply_to_grid(&self, grid: &mut Tetris) {
+    // Return false on kill
+    pub fn apply_to_grid(&mut self, grid: &mut Tetris) -> bool {
         for pos in self.get_bits_pos() {
-            grid.set_grid(pos, 1)
+            if pos.0 < 0 {
+                self.kill();
+                return false
+            } else {
+                grid.set_grid(pos, 1)
+            }
         }
+        return true
     }
 
     fn apply_dir(&mut self, dir: &Dir) {
@@ -260,7 +239,7 @@ impl Piece {
             let mut x = -1;
             for posx in posy {
                 x += 1;
-                if posx == 1 {
+                if posx == &1 {
                     piece_pos_vec.push(self.get_pos() + Pos(y, x))
                 }
             }
@@ -324,6 +303,10 @@ impl Piece {
         self.position
     }
 
+    pub fn set_pos(&mut self, p: Pos) {
+        self.position = p;
+    }
+
     pub fn is_alive(&self) -> bool {
         self.alive
     }
@@ -336,9 +319,11 @@ impl Piece {
     pub fn r#move(&mut self, dir: Dir, grid: &Tetris) {
         // If a hit is detected, don't move
         // Otherwise move
-        match self.hit_detect(&dir, &grid) {
-            Ok(_) => self.apply_dir(&dir),
-            Err(_) => (),
+        if self.is_alive() {
+            match self.hit_detect(&dir, &grid) {
+                Ok(_) => self.apply_dir(&dir),
+                Err(_) => (),
+            }
         }
     }
 }
@@ -349,7 +334,7 @@ mod tests {
 
     #[test]
     fn apply_down() {
-        let mut p = Piece::new(Pieces::Cube, Pos(0,0));
+        let mut p = Piece::random(Pos(0,0));
         let d = Dir::Down;
         p.apply_dir(&d);
 
@@ -360,7 +345,7 @@ mod tests {
 
     #[test]
     fn hit_test() {
-        let mut p = Piece::new(Pieces::Cube, Pos(30,0));
+        let mut p = Piece::random(Pos(30,0));
         let d = Dir::Down;
 
         let tetris = Tetris::new();
@@ -374,7 +359,7 @@ mod tests {
     }
     #[test]
     fn hit_nothing_test() {
-        let mut p = Piece::new(Pieces::Cube, Pos(0,0));
+        let mut p = Piece::random(Pos(0,0));
         let d = Dir::Down;
 
         let tetris = Tetris::new();

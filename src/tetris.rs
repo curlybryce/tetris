@@ -28,9 +28,10 @@ impl Tetris {
     // Check each row of the grid
     // If one is full, remove it and drop
     // the rest of the grid down
-    pub fn check_lines(&mut self) {
+    pub fn check_lines(&mut self) -> u8 {
         // While there are full lines, continue to iterate
         let mut row = 19;
+        let mut total = 0;
         while row > 0 {
             let mut c = 0;
             for x in self.grid.get(row as usize).expect("Out of bounds") {
@@ -45,11 +46,13 @@ impl Tetris {
             if c == 10 {
                 self.grid.remove(row as usize);
                 self.grid.insert(0, vec![0; 10]);
+                total += 1;
                 continue;
             }
 
             row -= 1;
         }
+        return total
     }
 
     pub fn get_grid_pos(&self, pos: piece::Pos) -> i8 {
