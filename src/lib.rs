@@ -39,9 +39,10 @@ impl Game {
 
         // View
         let view_geometry = (geometry.0 as f32, geometry.1 as f32);
-        let view = View::new(
+        let mut view = View::new(
             Vector2f::from(view_geometry) / 2.0,
             Vector2f::from(view_geometry));
+            view.set_viewport(&FloatRect{left: 0.0, top: 0.0, width: 1.0, height: 1.0});
         window.set_view(&view);
 
         Game{
@@ -92,7 +93,6 @@ impl Game {
 
     // The actual game loop
     pub fn game_loop(&mut self) {
-
         // Textures
         // Background
         let mut background = Texture::from_file("assets/background.png").expect("Cannot load texture");
@@ -132,6 +132,9 @@ impl Game {
         let mut next_piece = piece::Piece::random(piece::Pos(3,13));
         let mut key = None;
         'main: loop {
+            // Clear everything from display
+            self.window.clear(Color::rgb(0,0,0));
+
             // Process events
             for x in self.window.poll_event() {
                 match x {
@@ -167,8 +170,7 @@ impl Game {
                 n => {self.set_score(self.get_score() + (n * n) as u64);
                     self.set_tickrate(self.get_tickrate() - Duration::from_millis(n as u64 * 25));},
             }
-            println!("{}, {:?}", self.get_score(), self.get_tickrate());
-            
+
             // Execute on tick
             if tick.elapsed() >= self.get_tickrate() {
                 // Reset the clock
@@ -251,9 +253,7 @@ impl Game {
             }
         }
 
+        println!("{}", self.get_score());
         self.window.close();
     }
 }
-
-#[cfg(test)]
-mod tests {}
