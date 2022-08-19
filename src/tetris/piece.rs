@@ -198,16 +198,20 @@ impl Piece {
         for pos in self.get_bits_pos() {
             let new_pos = pos + dir.get();
 
-            // Detect blocks and kill only if Dir is down
-            if grid.get_grid_pos(new_pos) == 1 && *dir == Dir::Down {
-                self.kill();
-                return Err(())
-            } else if grid.get_grid_pos(new_pos) == 1 {
-                return Err(())
-            } else if new_pos.0 > 19 { // Detect bottom and kill
-                self.kill();
-                return Err(())
-            } else if new_pos.1 > 9 || new_pos.1 < 0 { // Detect sides
+            if self.is_alive() {
+                // Detect blocks and kill only if Dir is down
+                if grid.get_grid_pos(new_pos) == 1 && *dir == Dir::Down {
+                    self.kill();
+                    return Err(())
+                } else if grid.get_grid_pos(new_pos) == 1 {
+                    return Err(())
+                } else if new_pos.0 > 19 { // Detect bottom and kill
+                    self.kill();
+                    return Err(())
+                } else if new_pos.1 > 9 || new_pos.1 < 0 { // Detect sides
+                    return Err(())
+                }
+            } else {
                 return Err(())
             }
         }
@@ -315,15 +319,12 @@ impl Piece {
         self.alive = false
     }
 
-    // Return false if the piece cannot move
     pub fn r#move(&mut self, dir: Dir, grid: &Tetris) {
         // If a hit is detected, don't move
         // Otherwise move
-        if self.is_alive() {
-            match self.hit_detect(&dir, &grid) {
-                Ok(_) => self.apply_dir(&dir),
-                Err(_) => (),
-            }
+        match self.hit_detect(&dir, &grid) {
+            Ok(_) => self.apply_dir(&dir),
+            Err(_) => (),
         }
     }
 }

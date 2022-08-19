@@ -1,13 +1,15 @@
 mod tetris;
+mod input;
 
 use crate::tetris::piece;
+use crate::input::Action;
 
 use std::time::{Instant, Duration};
 use rand::Rng;
 
 // SFML
-use sfml::window::{Style, Event, ContextSettings, Key};
-use sfml::graphics::{self, *};
+use sfml::window::{Style, ContextSettings};
+use sfml::graphics::*;
 use sfml::system::{Vector2f, Vector2u};
 
 pub struct Game {
@@ -16,22 +18,22 @@ pub struct Game {
     maxfps: u64,
     window_geometry: (u32, u32),
     window: RenderWindow,
+    input: input::Input,
     score: u64,
 }
 impl Game {
     pub fn new() -> Game {
-        let maxfps = 30;
-        let geometry = (480, 480);
-
         // Window setup
         let mut context_settings: ContextSettings = Default::default();
         context_settings.antialiasing_level = 0;
+    let mut window = RenderWindow::new(
+        (480, 480),
+        "Test",
+        Style::DEFAULT,
+        &context_settings);
 
-        let mut window = graphics::RenderWindow::new(
-            geometry,
-            "Test",
-            Style::DEFAULT,
-            &context_settings);
+        let maxfps = 30;
+        let geometry = (480, 480);
 
         window.set_framerate_limit(maxfps);
         window.set_key_repeat_enabled(false);
@@ -51,6 +53,7 @@ impl Game {
             maxfps: 30,
             window_geometry: geometry,
             window: window,
+            input: input::Input::new(),
             score: 0,
         }
     }
@@ -84,11 +87,23 @@ impl Game {
 
     fn pause(&mut self) {
         loop {
-            match self.window.wait_event() {
-                Some(Event::GainedFocus) => break,
-                 _ => ()
-            }
+            self.process_inputs();
+            if *self.input.get_action(Action::GainedFocus) {break}
         }
+    }
+
+    fn process_inputs(&mut self) {
+        let mut poll = self.window.poll_event();
+        while poll != None {
+            self.input.process(poll);
+            poll = self.window.poll_event();
+        }
+    }
+
+    fn reset(&mut self) -> tetris::Tetris {
+        println!("{}", self.get_score());
+        self.set_score(0);
+        tetris::Tetris::new()
     }
 
     // The actual game loop
@@ -130,28 +145,30 @@ impl Game {
         let mut tetris = tetris::Tetris::new();
         let mut piece = piece::Piece::random(piece::Pos(-2,3));
         let mut next_piece = piece::Piece::random(piece::Pos(3,13));
-        let mut key = None;
+
         'main: loop {
             // Clear everything from display
             self.window.clear(Color::rgb(0,0,0));
 
+            self.process_inputs();
+
             // Process events
-            for x in self.window.poll_event() {
-                match x {
-                    Event::Closed => break 'main,
-                    Event::Resized {width: w, height: h} => self.set_geometry((w, h)),
-                    Event::LostFocus => self.pause(),
-                    Event::KeyPressed {code: c, ctrl: _, alt: _, shift: _, system: _} => key = Some(c),
-                    Event::KeyReleased {code: _, ctrl: _, alt: _, shift: _, system: _} => key = None,
-                    _ => (),
-                };
-            }
+            // for x in self.window.poll_event() {
+            //     match x {
+            //         Event::Closed => break 'main,
+            //         Event::Resized {width: w, height: h} => self.set_geometry((w, h)),
+            //         Event::LostFocus => self.pause(),
+            //         Event::KeyPressed {code: c, ctrl: _, alt: _, shift: _, system: _} => key = Some(c),
+            //         Event::KeyReleased {code: _, ctrl: _, alt: _, shift: _, system: _} => key = None,
+            //         _ => (),
+            //     };
+            // }
 
             // Check if piece is dead
             if piece.is_alive() == false {
                 if piece.apply_to_grid(&mut tetris) == false {
                     // Game has been lost
-                    break
+                    tetris = self.reset();
                 }
                 piece = next_piece;
                 piece.set_pos(tetris::piece::Pos(-2, 3));
@@ -186,27 +203,32 @@ impl Game {
                 // Reset the clock
                 fpscap = Instant::now();
                 
-                
                 // Process keys
                 // Limited keys
                 if key_count == 0 {
-                    match key {
-                        Some(Key::A) => {piece.r#move(tetris::piece::Dir::Left, &tetris)},
-                        Some(Key::D) => {piece.r#move(tetris::piece::Dir::Right, &tetris)},
-                        _ => ()
+                    for action in self.input.get_iter() {
+                        match action {
+                            Action::Left  => piece.r#move(tetris::piece::Dir::Left, &tetris),
+                            Action::Right => piece.r#move(tetris::piece::Dir::Right, &tetris),
+                            _ => ()
+                        }
                     }
                 }
                 //Process keys
                 // Unlimited keys
-                match key {
-                    Some(Key::S) => piece.r#move(tetris::piece::Dir::Down, &tetris),
-                    Some(Key::Q) => {piece.rotate(tetris::piece::Rotate::Left, &tetris); key = None},
-                    Some(Key::E) => {piece.rotate(tetris::piece::Rotate::Right, &tetris); key = None},
-                    Some(Key::Escape) => break,
-                    _ => ()
+                for action in self.input.get_iter() {
+                    match action {
+                        Action::RotateLeft => {piece.rotate(tetris::piece::Rotate::Left, &tetris); self.input.set_action(Action::RotateLeft, false)},
+                        Action::RotateRight => {piece.rotate(tetris::piece::Rotate::Right, &tetris); self.input.set_action(Action::RotateRight, false)},
+                        Action::Down => piece.r#move(tetris::piece::Dir::Down, &tetris),
+                        Action::Quit => break 'main,
+                        Action::LostFocus => self.pause(),
+                        _ => ()
+                    }
                 }
+
                 // Make the limit feel good
-                if key != None {
+                if *self.input.get_action(Action::Left) != false || *self.input.get_action(Action::Right) != false {
                     key_count += 1;
                 } else {
                     key_count = 0;

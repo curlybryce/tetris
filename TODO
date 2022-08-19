@@ -1,11 +1,9 @@
 Add sounds (mostly for losing, winning and clearing a row)
 Have a menu
-Be able to restart after game is lost
 Save scores
 
-Mouse input creates input lag
 Dead in mid-air bug again
-redo input system -- Separate input into it's own module
+Implement Iterator for Action and Actions
 
 Have each piece be its own color even when dead
 Fix aspect ratio to 1:1
